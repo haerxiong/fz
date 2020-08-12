@@ -6,7 +6,7 @@
 
     <groupId>org.example</groupId>
     <artifactId>fz</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0</version>
 
     <dependencies>
         <dependency>
@@ -50,4 +50,24 @@
             <version>8.0.20</version>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <classesDirectory>target/classes/</classesDirectory>
+                    <archive>
+                        <manifest>
+                            <mainClass>cn.lw.fz.Booter</mainClass>
+                            <useUniqueVersions>false</useUniqueVersions>
+                            <addClasspath>true</addClasspath>
+                            <classpathPrefix>lib/</classpathPrefix>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>
