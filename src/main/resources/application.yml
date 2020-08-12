@@ -1,0 +1,9 @@
+spring:
+#  main:
+#    web-application-type: none
+  datasource:
+    url: jdbc:mysql://49.235.81.165/fz?useUnicode=true&characterEncoding=UTF-8
+    username: root
+    password: Runo@2018
+  thymeleaf:
+    cache: false

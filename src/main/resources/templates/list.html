@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+<!--    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">-->
+    <link rel="stylesheet" th:href="@{/eui/2_13_2/index.css}">
+</head>
+<body>
+<div id="app">
+    <template>
+        <el-row>
+            <el-button @click="create" size="small" type="primary" v-loading="loading">自动创建账号</el-button>
+        </el-row>
+        <el-row>
+            <div style="padding: 5px;">
+                <el-table :data="list" stripe>
+                    <el-table-column prop="email" label="邮箱" width="180"></el-table-column>
+                    <el-table-column prop="rest" label="剩余流量" width="300">
+                        <template slot-scope="scope">
+                            <el-button @click="refresh(scope.row)" size="small" :loading="restLoading">刷新</el-button>
+                            {{scope.row.rest}}
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="createTime" label="创建日期" width="180" :formatter="formatDay"></el-table-column>
+                    <el-table-column prop="url" label="订阅地址" width="500">
+                        <template slot-scope="scope">
+                            <el-popover placement="left" trigger="click" content="已复制">
+                                <el-button slot="reference" class="btn" size="small" :data-clipboard-text="scope.row.url" type="success" round>复制地址</el-button>
+                            </el-popover>
+                            {{scope.row.url}}
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="操作">
+                        <template slot-scope="scope">
+                            <el-button size="small" type="danger" @click="bak(scope.row)" :loading="bakLoading" round>删除</el-button>
+                        </template>
+                    </el-table-column>
+                </el-table>
+            </div>
+        </el-row>
+        <input id="url" type="hidden">
+    </template>
+</div>
+</body>
+<script th:src="@{/eui/2_13_2/vue.js}"></script>
+<script th:src="@{/eui/2_13_2/index.js}"></script>
+<script th:src="@{/js/axios.min.js}"></script>
+<script th:src="@{/js/clipboard.min.js}"></script>
+<!--<script src="https://unpkg.com/vue/dist/vue.js"></script>-->
+<!--<script src="https://unpkg.com/element-ui/lib/index.js"></script>-->
+<!--<script src=”https://unpkg.com/axios/dist/axios.min.js”></script>-->
+<script th:inline="javascript">
+    let list = [[${all}]];
+</script>
+<script th:inline="none">
+    new ClipboardJS('.btn');
+    new Vue({
+        el: '#app',
+        data: function() {
+            return {
+                list: list,
+                restLoading: false,
+                bakLoading: false,
+                loading: false
+            }
+        },
+        methods: {
+            create() {
+                this.loading = true;
+                axios("/fz/create").then(res => {
+                    window.location.reload();
+                });
+            },
+            refresh(row) {
+                this.restLoading = true;
+                axios("/fz/refresh/" + row.id).then(res => {
+                    window.location.reload();
+                });
+            },
+            formatDay(row, col) {
+                return new Date(row.createTime).toLocaleDateString();
+            },
+            bak(row) {
+                this.bakLoading = true;
+                axios("/fz/bak/" + row.id).then(res => {
+                    window.location.reload();
+                });
+            }
+        }
+    });
+</script>
+</html>
