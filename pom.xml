@@ -61,9 +61,6 @@
                     <archive>
                         <manifest>
                             <mainClass>cn.lw.fz.Booter</mainClass>
-                            <useUniqueVersions>false</useUniqueVersions>
-                            <addClasspath>true</addClasspath>
-                            <classpathPrefix>lib/</classpathPrefix>
                         </manifest>
                     </archive>
                 </configuration>
