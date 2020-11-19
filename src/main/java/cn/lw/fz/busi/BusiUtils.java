@@ -110,4 +110,24 @@ public class BusiUtils {
             return loginCookie;
         });
     }
+
+    public static String getRs(String url) throws Exception {
+        CloseableHttpClient client = HttpClients.createDefault();
+        HttpGet httpGet = new HttpGet();
+        httpGet.setURI(URI.create(url));
+        return client.execute(httpGet, response -> {
+            HttpEntity rs = response.getEntity();
+            InputStream is = rs.getContent();
+            Scanner scanner = new Scanner(is).useDelimiter("\\A");
+            String str = scanner.hasNext() ? scanner.next() : "";
+//            System.out.println(str);
+            return str;
+        });
+    }
+
+    public static void main(String[] args) throws Exception {
+        String rs = BusiUtils.getRs("https://api.f1zz.cc/link/sFrU7rgsRso38v2g?mu=1");
+        System.out.println("--------");
+        System.out.println(rs);
+    }
 }

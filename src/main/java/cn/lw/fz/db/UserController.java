@@ -13,8 +13,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import javax.servlet.http.HttpServletResponse;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -27,6 +30,7 @@ public class UserController {
     UserDao userDao;
 
     private User curUser;
+    private Map<Integer, String> map = new HashMap<>();
 
     private ExecutorService pool = Executors.newFixedThreadPool(2);
 
@@ -35,7 +39,8 @@ public class UserController {
     }
 
     @GetMapping("/auto")
-    public String list() throws Exception {
+    @ResponseBody
+    public String auto(HttpServletResponse response) throws Exception {
         String targetUrl = null;
 
         if (curUser != null) {
@@ -55,7 +60,16 @@ public class UserController {
             }
         }
 
-        return "redirect:" + targetUrl;
+        response.setHeader("Content-Disposition", "attachment; filename=sFrU7rgsRso38v2g.txt");
+        String rs;
+        if (map.containsKey(curUser.getId())) {
+            rs = map.get(curUser.getId());
+        } else {
+            rs = BusiUtils.getRs(targetUrl);
+            map.put(curUser.getId(), rs);
+        }
+        System.out.println(rs);
+        return rs;
     }
 
     @RequestMapping("")
