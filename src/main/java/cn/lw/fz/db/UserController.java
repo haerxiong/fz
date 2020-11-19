@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletResponse;
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -38,6 +39,12 @@ public class UserController {
         return user.getRest().contains("GB");
     }
 
+    private boolean isAlmostGone(User user) {
+        if (!this.isEnough(user)) return true;
+        BigDecimal bd = new BigDecimal(user.getRest().replace("GB", ""));
+        return bd.compareTo(new BigDecimal("2")) < 0;
+    }
+
     @GetMapping("/auto")
     @ResponseBody
     public String auto(HttpServletResponse response) throws Exception {
@@ -45,10 +52,19 @@ public class UserController {
 
         if (curUser != null) {
             targetUrl = curUser.getUrl();
+            if (isAlmostGone(curUser)) {
+                // 余量小于2G时，每次请求后更新余量，如果不足1G，则下次更换地址。
+                pool.submit(() -> {
+                    User user = this.refreshUser(curUser);
+                    if (!this.isEnough(user)) {
+                        this.del(curUser.getId());
+                    }
+                });
+            }
         } else {
             List<User> all = userDao.findAll();
             for (User u : all) {
-                if (u.getRest().contains("GB")) {
+                if (this.isEnough(u)) {
                     targetUrl = u.getUrl();
                     curUser = u;
                 }
