@@ -14,14 +14,18 @@
         <el-row>
             <div style="padding: 5px;">
                 <el-table :data="list" stripe>
-                    <el-table-column prop="email" label="邮箱" width="180"></el-table-column>
-                    <el-table-column prop="rest" label="剩余流量" width="300">
+                    <el-table-column prop="email" label="邮箱" width="200" :formatter="cellF"></el-table-column>
+                    <el-table-column prop="rest" label="剩余流量" width="180">
                         <template slot-scope="scope">
                             <el-button @click="refresh(scope.row)" size="small" :loading="restLoading">刷新</el-button>
                             {{scope.row.rest}}
                         </template>
                     </el-table-column>
-                    <el-table-column prop="createTime" label="创建日期" width="180" :formatter="formatDay"></el-table-column>
+                    <el-table-column label="操作" width="100">
+                        <template slot-scope="scope">
+                            <el-button size="small" type="danger" @click="bak(scope.row)" :loading="bakLoading" round>删除</el-button>
+                        </template>
+                    </el-table-column>
                     <el-table-column prop="url" label="订阅地址" width="500">
                         <template slot-scope="scope">
                             <el-popover placement="left" trigger="click" content="已复制">
@@ -30,11 +34,7 @@
                             {{scope.row.url}}
                         </template>
                     </el-table-column>
-                    <el-table-column label="操作">
-                        <template slot-scope="scope">
-                            <el-button size="small" type="danger" @click="bak(scope.row)" :loading="bakLoading" round>删除</el-button>
-                        </template>
-                    </el-table-column>
+                    <el-table-column prop="createTime" label="创建日期" width="180" :formatter="formatDay"></el-table-column>
                 </el-table>
             </div>
         </el-row>
@@ -51,6 +51,7 @@
 <!--<script src=”https://unpkg.com/axios/dist/axios.min.js”></script>-->
 <script th:inline="javascript">
     let list = [[${all}]];
+    let curId = [[${curId}]];
 </script>
 <script th:inline="none">
     new ClipboardJS('.btn');
@@ -61,10 +62,18 @@
                 list: list,
                 restLoading: false,
                 bakLoading: false,
-                loading: false
+                loading: false,
+                curId: curId
             }
         },
         methods: {
+            cellF(row,rowIndex,val) {
+                let title = row.email;
+                if (curId == row.id) {
+                    title += "(使用中)";
+                }
+                return title;
+            },
             create() {
                 this.loading = true;
                 axios("/fz/create").then(res => {
