@@ -147,6 +147,7 @@ public class UserController {
                 userDao.deleteById(id);
             }
             if (curUser != null && curUser.getId() == id) {
+                map.remove(curUser.getId());
                 curUser = null;
             }
             return "ok";
