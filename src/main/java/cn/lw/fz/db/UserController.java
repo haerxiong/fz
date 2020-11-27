@@ -1,11 +1,12 @@
 package cn.lw.fz.db;
 
+import cn.lw.fz.aop.AutoClassLog;
 import cn.lw.fz.busi.BusiUtils;
 import cn.lw.fz.busi.LoginCookie;
 import cn.lw.fz.busi.LoginResult;
 import cn.lw.fz.busi.LoginUser;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,16 +16,14 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletResponse;
 import java.math.BigDecimal;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
 
 @Controller
 @RequestMapping("/fz")
+@AutoClassLog
+@Slf4j
 public class UserController {
 
     @Autowired
@@ -66,6 +65,7 @@ public class UserController {
             for (User u : all) {
                 if (this.isEnough(u)) {
                     targetUrl = u.getUrl();
+                    log.warn(String.format("更换了订阅账号：[%s->%s]", curUser.getEmail(), u.getEmail()));
                     curUser = u;
                 }
             }
@@ -115,6 +115,7 @@ public class UserController {
                 newUser.setRest(user.getRest());
                 newUser.setUrl(user.getUrl());
                 userDao.save(newUser);
+                log.warn("申请了新的账号：" + newUser.getEmail());
                 return "ok";
             }
         } catch (Exception e) {
@@ -142,6 +143,7 @@ public class UserController {
             one.setRest(user.getRest());
             one.setUrl(user.getUrl());
             userDao.save(one);
+            log.warn("更新账号流量：" + one.getEmail());
             return one;
         } catch (Exception e) {
             e.printStackTrace();
