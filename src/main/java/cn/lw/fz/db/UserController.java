@@ -65,7 +65,7 @@ public class UserController {
             for (User u : all) {
                 if (this.isEnough(u)) {
                     targetUrl = u.getUrl();
-                    log.warn(String.format("更换了订阅账号：[%s->%s]", curUser.getEmail(), u.getEmail()));
+                    log.warn(String.format("更换了订阅账号：[%s->%s]", curUser==null?"":curUser.getEmail(), u.getEmail()));
                     curUser = u;
                 }
             }
