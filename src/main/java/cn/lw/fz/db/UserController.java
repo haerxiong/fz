@@ -68,6 +68,7 @@ public class UserController {
                         }
                     });
                 }
+                break;
             }
         }
 
