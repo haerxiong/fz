@@ -7,6 +7,8 @@ import cn.lw.fz.busi.LoginResult;
 import cn.lw.fz.busi.LoginUser;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Example;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,7 +32,10 @@ public class UserController {
     UserDao userDao;
 
     private User curUser;
-    private Map<Integer, String> map = new HashMap<>();
+    /**
+     * 订阅信息缓存
+     */
+    private Map<Integer, String> cacheMap = new HashMap<>();
 
     private ExecutorService pool = Executors.newFixedThreadPool(2);
 
@@ -47,51 +52,46 @@ public class UserController {
     @GetMapping("/auto")
     @ResponseBody
     public String auto(HttpServletResponse response) throws Exception {
-        String targetUrl = null;
-
-        if (curUser != null) {
-            targetUrl = curUser.getUrl();
-            if (isAlmostGone(curUser)) {
-                // 余量小于2G时，每次请求后更新余量，如果不足1G，则下次更换地址。
-                pool.submit(() -> {
-                    User user = this.refreshUser(curUser);
-                    if (!this.isEnough(user)) {
-                        this.del(curUser.getId());
-                    }
-                });
-            }
-        } else {
-            List<User> all = userDao.findAll();
-            for (User u : all) {
-                if (this.isEnough(u)) {
-                    targetUrl = u.getUrl();
-                    log.warn(String.format("更换了订阅账号：[%s->%s]", (curUser==null)?"":curUser.getEmail(), u.getEmail()));
-                    curUser = u;
-                    break;
+        // 从库中返回另一个url，然后去更新检测当前url
+        List<User> all = userDao.findAll(Sort.by(Sort.Direction.ASC, "createTime"));
+        for (User u : all) {
+            if (curUser == null || !curUser.getEmail().equals(u.getEmail())) {
+                log.warn(String.format("更换了订阅账号：[%s->%s]", (curUser==null)?"":curUser.getEmail(), u.getEmail()));
+                User check = curUser;
+                curUser = u;
+                if (check != null) {
+                    pool.submit(() -> {
+                        User rs = this.refreshUser(check);
+                        if (!isEnough(rs)) {
+                            // 更新检查后，如果不足，删除
+                            this.del(rs.getId());
+                        }
+                    });
                 }
             }
-            if (all.size() < 5) {
-                pool.submit(() -> {
-                    this.create();
-                });
-            }
+        }
+
+        String targetUrl = curUser.getUrl();
+        if (all.size() < 5) {
+            pool.submit(() -> {
+                this.create();
+            });
         }
 
         response.setHeader("Content-Disposition", "attachment; filename=sFrU7rgsRso38v2g.txt");
         String rs;
-        if (map.containsKey(curUser.getId())) {
-            rs = map.get(curUser.getId());
+        if (cacheMap.containsKey(curUser.getId())) {
+            rs = cacheMap.get(curUser.getId());
         } else {
             rs = BusiUtils.getRs(targetUrl);
-            map.put(curUser.getId(), rs);
+            cacheMap.put(curUser.getId(), rs);
         }
-        System.out.println(rs);
         return rs;
     }
 
     @RequestMapping("")
     public String list(Model model) {
-        List<User> all = userDao.findAll();
+        List<User> all = userDao.findAll(Sort.by(Sort.Direction.ASC, "createTime"));
         model.addAttribute("all", all);
         model.addAttribute("curId", curUser==null?-1:curUser.getId());
         return "list";
@@ -166,7 +166,7 @@ public class UserController {
                 userDao.deleteById(id);
             }
             if (curUser != null && curUser.getId() == id) {
-                map.remove(curUser.getId());
+                cacheMap.remove(curUser.getId());
                 curUser = null;
             }
             return "ok";
