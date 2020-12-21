@@ -1,1 +1,1 @@
-Author email:282749597@qq.com
+An auto Socket5 tool. 
