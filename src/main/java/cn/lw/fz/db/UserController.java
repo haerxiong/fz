@@ -5,6 +5,7 @@ import cn.lw.fz.busi.BusiUtils;
 import cn.lw.fz.busi.LoginCookie;
 import cn.lw.fz.busi.LoginResult;
 import cn.lw.fz.busi.LoginUser;
+import cn.lw.fz.utils.IPUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.math.BigDecimal;
 import java.util.*;
@@ -31,7 +33,7 @@ public class UserController {
     @Autowired
     UserDao userDao;
 
-    private User curUser;
+    private Map<String, User> curUsers = new HashMap<>();
     /**
      * 订阅信息缓存
      */
@@ -51,7 +53,9 @@ public class UserController {
 
     @GetMapping("/auto")
     @ResponseBody
-    public String auto(HttpServletResponse response) throws Exception {
+    public String auto(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        String ip = IPUtil.getIpAddress(request);
+        User curUser = curUsers.get(ip);
         // 从库中返回另一个url，然后去更新检测当前url
         List<User> all = userDao.findAll(Sort.by(Sort.Direction.ASC, "createTime"));
         for (User u : all) {
@@ -59,12 +63,13 @@ public class UserController {
                 log.warn(String.format("更换了订阅账号：[%s->%s]", (curUser==null)?"":curUser.getEmail(), u.getEmail()));
                 User check = curUser;
                 curUser = u;
+                curUsers.put(ip, u);
                 if (check != null) {
                     pool.submit(() -> {
                         User rs = this.refreshUser(check);
                         if (!isEnough(rs)) {
                             // 更新检查后，如果不足，删除
-                            this.del(rs.getId());
+                            this.del(rs.getId(), request);
                         }
                     });
                 }
@@ -94,7 +99,19 @@ public class UserController {
     public String list(Model model) {
         List<User> all = userDao.findAll(Sort.by(Sort.Direction.ASC, "createTime"));
         model.addAttribute("all", all);
-        model.addAttribute("curId", curUser==null?-1:curUser.getId());
+        if (curUsers != null) {
+            curUsers.entrySet().forEach(map -> {
+                User u = map.getValue();
+                Optional<User> first = all.stream().filter(e -> u.getId() == e.getId()).findFirst();
+                if (first.isPresent()) {
+                    String ips = first.get().getIps();
+                    if (ips == null) {
+                        first.get().setIps("");
+                    }
+                    first.get().setIps(ips + ";" + map.getKey());
+                }
+            });
+        }
         return "list";
     }
 
@@ -160,7 +177,8 @@ public class UserController {
 
     @RequestMapping("/bak/{id}")
     @ResponseBody
-    public String del(@PathVariable("id") Integer id) {
+    public String del(@PathVariable("id") Integer id, HttpServletRequest request) {
+        User curUser = curUsers.get(IPUtil.getIpAddress(request));
         try {
             int bak = userDao.bak(id);
             if (bak > 0) {

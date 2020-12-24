@@ -2,11 +2,9 @@ package cn.lw.fz.db;
 
 import lombok.Data;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 import java.util.Date;
+import java.util.List;
 
 @Table
 @Entity
@@ -22,4 +20,6 @@ public class User {
     private String rest;
     @Column(name = "create_time")
     private Date createTime;
+    @Transient
+    private String ips;
 }
