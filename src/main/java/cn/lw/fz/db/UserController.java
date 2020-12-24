@@ -60,6 +60,14 @@ public class UserController {
         List<User> all = userDao.findAll(Sort.by(Sort.Direction.ASC, "createTime"));
         for (User u : all) {
             if (curUser == null || !curUser.getEmail().equals(u.getEmail())) {
+                boolean used = false;
+                for (Map.Entry<String, User> m : curUsers.entrySet()) {
+                    if (m.getValue().getId() == u.getId()) {
+                        used = true;
+                        break;
+                    }
+                }
+                if (used) continue;
                 log.warn(String.format("更换了订阅账号：[%s->%s]", (curUser==null)?"":curUser.getEmail(), u.getEmail()));
                 User check = curUser;
                 curUser = u;
